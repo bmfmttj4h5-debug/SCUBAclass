@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>SCUBAclass</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script>
+/* =====================================================================
+   НАСТРОЙКА — единственное, что нужно поменять
+   ---------------------------------------------------------------------
+   SHEET_ID — кусок ссылки на Google Таблицу между /d/ и /edit
+   Пример ссылки: https://docs.google.com/spreadsheets/d/1AbC...xYz/edit
+                                                         ^^^^^^^^^^ это ID
+   Таблица должна быть открыта: «Настройки доступа» → «Все, у кого есть
+   ссылка» → «Читатель».
+   Если оставить пустым — приложение покажет демо-данные.
+   ===================================================================== */
+const SHEET_ID = "1VbwHPQGznSnu2IfZQ-GyJwbGC1wkz2UCtaE7HHv7Q48";
+</script>
+<script src="demo-data.js"></script>
+<style>
+:root{
+  --brand:#1F4E79; --accent:#2E86AB; --btn:#2E86AB;
+  --bg:#F4F6F9; --card:#FFFFFF; --text:#14202B; --muted:#6B7580; --line:#E4E9EE;
+  --chip:#EAF3FA; --chip-text:#1F4E79; --ok:#2E7D32; --warn:#B3261E;
+  --shadow:0 1px 2px rgba(16,30,45,.06),0 4px 14px rgba(16,30,45,.05);
+}
+.dark{
+  --bg:#0F1720; --card:#18222D; --text:#E8EEF3; --muted:#93A1AE; --line:#26333F;
+  --chip:#1D3346; --chip-text:#A9D4F2; --shadow:none;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bg);color:var(--text)}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans",Arial,sans-serif;font-size:15px;line-height:1.4;padding-bottom:calc(24px + env(safe-area-inset-bottom))}
+a{color:var(--accent);text-decoration:none}
+button{font:inherit;border:0;background:none;color:inherit;cursor:pointer}
+
+/* header */
+.head{display:flex;align-items:center;gap:12px;padding:14px 16px 6px}
+.logo{height:40px;max-width:130px;object-fit:contain;border-radius:8px;background:#fff;padding:3px 6px}
+.logo-fallback{height:40px;width:40px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--brand));display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff}
+.head .t{font-weight:800;font-size:18px;letter-spacing:.2px}
+.head .s{font-size:12.5px;color:var(--muted)}
+
+.hero{margin:10px 16px 12px;border-radius:18px;padding:18px 18px 16px;color:#fff;background:linear-gradient(135deg,var(--accent),var(--brand));position:relative;overflow:hidden}
+.hero:after{content:"";position:absolute;right:-30px;top:-30px;width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,.08)}
+.hero .h{font-size:21px;font-weight:800}
+.hero .p{font-size:13.5px;opacity:.92;margin-top:4px}
+
+/* tabs */
+.tabs{position:sticky;top:0;z-index:5;background:var(--bg);display:flex;gap:6px;padding:8px 16px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:0 0 auto;padding:8px 14px;border-radius:12px;font-size:14px;font-weight:650;background:var(--card);color:var(--muted);box-shadow:var(--shadow)}
+.tab.on{background:var(--brand);color:#fff}
+
+.sec{padding:4px 16px 8px}
+.sec h2{font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);font-weight:700;margin:14px 2px 8px}
+.list{display:flex;flex-direction:column;gap:10px}
+
+/* card */
+.card{background:var(--card);border-radius:16px;box-shadow:var(--shadow);padding:13px;display:flex;gap:12px;align-items:center;width:100%;text-align:left}
+.ic{width:46px;height:46px;border-radius:13px;background:var(--chip);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
+.ct{font-weight:700;font-size:15.5px}
+.cs{font-size:12.5px;color:var(--muted);margin-top:2px}
+.price{margin-left:auto;font-weight:800;color:var(--chip-text);font-size:14px;white-space:nowrap;padding-left:8px}
+.chev{color:var(--muted);font-size:18px;margin-left:2px}
+
+.tags{display:flex;gap:6px;flex-wrap:wrap}
+.tag{font-size:12px;background:var(--chip);color:var(--chip-text);border-radius:7px;padding:3px 8px;font-weight:650}
+.tag.hot{background:#FDE7E4;color:#B3261E}
+.tag.ok{background:#E3F4E5;color:#2E7D32}
+
+/* photo cards */
+.pcard{background:var(--card);border-radius:16px;overflow:hidden;box-shadow:var(--shadow)}
+.pimg{height:130px;background-size:cover;background-position:center;display:flex;align-items:flex-end;padding:10px 12px;color:#fff;font-weight:800;font-size:17px;text-shadow:0 1px 6px rgba(0,0,0,.35);position:relative}
+.pimg .badge{position:absolute;top:10px;right:10px;background:rgba(0,0,0,.45);font-size:12px;padding:4px 8px;border-radius:8px;font-weight:700;text-shadow:none}
+.pbody{padding:10px 12px 12px}
+.pdesc{font-size:13.5px;color:var(--muted);margin-top:8px}
+.row{display:flex;gap:8px;margin-top:10px}
+.btn{flex:1;background:var(--btn);color:#fff;border-radius:12px;padding:11px 10px;font-weight:700;text-align:center;font-size:14.5px}
+.btn.ghost{background:var(--chip);color:var(--chip-text)}
+
+/* pool */
+.slot{background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:11px 12px;display:flex;gap:12px;align-items:center;width:100%;text-align:left}
+.date{width:52px;flex-shrink:0;text-align:center;border-radius:11px;background:var(--chip);color:var(--chip-text);padding:5px 0}
+.date .d{font-size:19px;font-weight:800;line-height:1.1}
+.date .w{font-size:11.5px;font-weight:700;text-transform:uppercase}
+.time{font-weight:800;font-size:15px}
+.win{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:12px 14px;font-size:14px}
+.win .dl{font-weight:700}
+.info{background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:12px 14px;font-size:14px;display:flex;flex-direction:column;gap:6px}
+.info .l{color:var(--muted);font-size:12.5px}
+
+/* sheet (detail) */
+.back{position:fixed;inset:0;background:rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:.2s;z-index:20}
+.back.on{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:0;right:0;bottom:0;max-height:88vh;overflow:auto;background:var(--card);border-radius:22px 22px 0 0;transform:translateY(105%);transition:transform .25s ease;z-index:21;padding:8px 18px calc(18px + env(safe-area-inset-bottom))}
+.sheet.on{transform:none}
+.grab{width:40px;height:5px;border-radius:3px;background:var(--line);margin:4px auto 12px}
+.sheet h3{font-size:20px;font-weight:800;display:flex;gap:10px;align-items:center}
+.sheet .lead{color:var(--muted);margin:8px 0 12px;font-size:14.5px}
+.kv{display:flex;flex-direction:column;gap:10px;margin-bottom:14px}
+.kv div{display:flex;gap:10px;font-size:14.5px}
+.kv .k{width:26px;flex-shrink:0;text-align:center}
+.kv b{font-weight:700}
+
+.empty{color:var(--muted);text-align:center;padding:26px 10px;font-size:14px}
+.note{font-size:12px;color:var(--muted);text-align:center;margin:18px 16px 0}
+.skel{height:70px;border-radius:16px;background:linear-gradient(90deg,var(--card),var(--line),var(--card));background-size:200% 100%;animation:sk 1.2s infinite}
+@keyframes sk{to{background-position:-200% 0}}
+</style>
+</head>
+<body>
+<div class="head" id="head"></div>
+<div class="hero" id="hero"></div>
+<div class="tabs" id="tabs"></div>
+<main id="main"><div class="sec list"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div></main>
+<div class="note" id="note"></div>
+<div class="back" id="back"></div>
+<div class="sheet" id="sheet"></div>
+
+<script>
+const tg = window.Telegram && window.Telegram.WebApp;
+const SHEETS = ["Настройки","Курсы","Окна бассейна","Бассейн","Места","Поездки"];
+const TABS = [["courses","Курсы"],["pool","Бассейн"],["places","Места"],["trips","Поездки"],["contacts","Контакты"]];
+const GRADS = ["linear-gradient(160deg,#6fd3f5,#1f6fb2 60%,#0c3d6b)","linear-gradient(160deg,#7ecfc0,#2a7f86)",
+  "linear-gradient(160deg,#8fb7e8,#2b4f8c)","linear-gradient(160deg,#9be7d8,#1b8a9a 55%,#0b4a5e)","linear-gradient(160deg,#f6c28b,#e0756b 50%,#3b4e8c)"];
+const WD = ["Вс","Пн","Вт","Ср","Чт","Пт","Сб"];
+const WD_ORDER = ["Пн","Вт","Ср","Чт","Пт","Сб","Вс"];
+const MONTHS = ["янв","фев","мар","апр","мая","июн","июл","авг","сен","окт","ноя","дек"];
+
+let D = null, S = {}, tab = "courses";
+try { tab = localStorage.getItem("tab") || "courses"; } catch(e) {}
+
+/* ---------- helpers ---------- */
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const jsq = s => esc(String(s ?? "").replace(/\\/g,"\\\\").replace(/'/g,"\\'").replace(/[\r\n]+/g," "));
+const price = s => String(s||"").trim().replace(/^От(\s)/,"от$1").replace(/(\d)\s*₽/g,"$1 ₽");
+const shown = r => String(r["Показывать"]||"").trim().toLowerCase() !== "нет";
+const v = (r,k) => String(r[k] ?? "").trim();
+
+function parseCSV(text){
+  const rows=[]; let row=[], cur="", q=false;
+  for (let i=0;i<text.length;i++){
+    const c=text[i];
+    if (q){ if(c==='"'){ if(text[i+1]==='"'){cur+='"';i++;} else q=false; } else cur+=c; }
+    else if (c==='"') q=true;
+    else if (c===','){ row.push(cur); cur=""; }
+    else if (c==='\n'||c==='\r'){ if(c==='\r'&&text[i+1]==='\n') i++; row.push(cur); rows.push(row); row=[]; cur=""; }
+    else cur+=c;
+  }
+  if (cur!==""||row.length){ row.push(cur); rows.push(row); }
+  if (!rows.length) return [];
+  const h = rows[0].map(x=>x.trim());
+  return rows.slice(1).filter(r=>r.some(x=>x.trim()!=="")).map(r=>Object.fromEntries(h.map((k,i)=>[k,(r[i]??"").trim()])));
+}
+function parseDate(s){
+  s=String(s||"").trim(); if(!s) return null;
+  let m=s.match(/^(\d{1,2})[.\/](\d{1,2})[.\/](\d{2,4})/);
+  if(m){ let y=+m[3]; if(y<100) y+=2000; return new Date(y,+m[2]-1,+m[1]); }
+  m=s.match(/^(\d{4})-(\d{2})-(\d{2})/); if(m) return new Date(+m[1],+m[2]-1,+m[3]);
+  return null;
+}
+function tm(s){ const m=String(s||"").match(/(\d{1,2})[:.](\d{2})/); return m? m[1].padStart(2,"0")+":"+m[2] : String(s||""); }
+const fmtD = d => d.getDate()+" "+MONTHS[d.getMonth()];
+function today(){ const d=new Date(); d.setHours(0,0,0,0); return d; }
+function photo(p,i){
+  p=String(p||"").trim();
+  if(!p) return GRADS[i%GRADS.length];
+  const url = /^https?:\/\//.test(p) ? p : "photos/"+p;
+  return `linear-gradient(to top,rgba(0,0,0,.45),rgba(0,0,0,0) 55%),url("${url.replace(/"/g,'%22')}"),${GRADS[i%GRADS.length]}`;
+}
+function tgNick(){ return v(S,"Telegram для записи").replace(/^@/,"").replace(/^https?:\/\/t\.me\//,""); }
+function book(text){
+  const nick=tgNick();
+  if(!nick){ alert("Напишите нам: "+(v(S,"Телефон")||"")); return; }
+  const url="https://t.me/"+nick+"?text="+encodeURIComponent(text);
+  if(tg && tg.openTelegramLink) tg.openTelegramLink(url); else window.open(url,"_blank");
+}
+function openLink(u){ if(!u) return; if(/^(tel|mailto):/.test(u)){ location.href=u; return; } if(/^https?:\/\/t\.me\//.test(u) && tg && tg.openTelegramLink) tg.openTelegramLink(u); else if(tg && tg.openLink && /^https?:/.test(u)) tg.openLink(u); else window.open(u,"_blank"); }
+window.book=book; window.openLink=openLink;
+
+/* ---------- data ---------- */
+async function fetchSheet(name){
+  const url=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&headers=1&sheet=${encodeURIComponent(name)}`;
+  const r=await fetch(url,{cache:"no-store"}); if(!r.ok) throw new Error(name+": "+r.status);
+  const t=await r.text(); if(t.trim().startsWith("<")) throw new Error("Таблица закрыта");
+  return parseCSV(t);
+}
+async function load(){
+  let cached=null;
+  try{ cached=JSON.parse(localStorage.getItem("data")||"null"); }catch(e){}
+  if(!SHEET_ID){ setData(window.DEMO_DATA||{}); note("Демо-данные: впиши SHEET_ID в index.html"); return; }
+  if(cached) setData(cached);
+  try{
+    const parts=await Promise.all(SHEETS.map(n=>fetchSheet(n).catch(()=>null)));
+    const d={}; SHEETS.forEach((n,i)=>d[n]=parts[i]||(cached&&cached[n])||[]);
+    if(!parts.some(Boolean)) throw new Error("no data");
+    setData(d);
+    try{ localStorage.setItem("data",JSON.stringify(d)); }catch(e){}
+    note("");
+  }catch(e){
+    if(!cached){ setData(window.DEMO_DATA||{}); note("Не удалось загрузить таблицу — показаны демо-данные"); }
+    else note("Нет связи — показаны сохранённые данные");
+  }
+}
+function note(t){ document.getElementById("note").textContent=t; }
+function setData(d){
+  D=d; S={};
+  (d["Настройки"]||[]).forEach(r=>{ const k=v(r,"Параметр"); if(k) S[k]=v(r,"Значение"); });
+  const root=document.documentElement.style;
+  if(/^#[0-9a-f]{6}$/i.test(v(S,"Основной цвет"))) root.setProperty("--brand",v(S,"Основной цвет"));
+  if(/^#[0-9a-f]{6}$/i.test(v(S,"Акцентный цвет"))){ root.setProperty("--accent",v(S,"Акцентный цвет")); root.setProperty("--btn",v(S,"Акцентный цвет")); }
+  render();
+}
+
+/* ---------- render ---------- */
+function render(){
+  const name=v(S,"Название")||"SCUBAclass", logo=v(S,"Логотип (ссылка)");
+  document.title=name;
+  document.getElementById("head").innerHTML=
+    (logo?`<img class="logo" src="${esc(logo)}" alt="" onerror="this.outerHTML='<div class=logo-fallback>🤿</div>'">`:`<div class="logo-fallback">🤿</div>`)+
+    `<div><div class="t">${esc(name)}</div><div class="s">${esc(v(S,"Слоган"))}</div></div>`;
+  const hh=v(S,"Приветствие в баннере"), hp=v(S,"Подпись баннера");
+  const hero=document.getElementById("hero");
+  hero.style.display=(hh||hp)?"":"none";
+  hero.innerHTML=`<div class="h">${esc(hh)}</div><div class="p">${esc(hp)}</div>`;
+  document.getElementById("tabs").innerHTML=TABS.map(([id,t])=>`<button class="tab${id===tab?" on":""}" onclick="go('${id}')">${t}</button>`).join("");
+  const m=document.getElementById("main");
+  m.innerHTML=({courses:rCourses,pool:rPool,places:rPlaces,trips:rTrips,contacts:rContacts}[tab]||rCourses)();
+}
+window.go=function(id){ tab=id; try{localStorage.setItem("tab",id);}catch(e){} render(); window.scrollTo({top:document.getElementById("tabs").offsetTop-2,behavior:"smooth"}); if(tg&&tg.HapticFeedback) tg.HapticFeedback.selectionChanged(); };
+
+/* courses */
+function rCourses(){
+  const rows=(D["Курсы"]||[]).filter(r=>shown(r)&&v(r,"Название"));
+  if(!rows.length) return `<div class="empty">Курсы скоро появятся</div>`;
+  const groups={}; const order=[];
+  rows.forEach((r,i)=>{ const c=v(r,"Категория")||"Курсы"; if(!groups[c]){groups[c]=[];order.push(c);} groups[c].push(i); });
+  window._courses=rows;
+  return `<div class="sec">`+order.map(c=>`<h2>${esc(c)}</h2><div class="list">`+groups[c].map(i=>{
+    const r=rows[i]; const sub=[v(r,"Сроки"), v(r,"Мин. возраст")?("от "+v(r,"Мин. возраст")+" лет"):"", v(r,"Нужен сертификат")?("после "+v(r,"Нужен сертификат")):""].filter(Boolean).join(" · ");
+    return `<button class="card" onclick="course(${i})"><div class="ic">${esc(v(r,"Иконка")||"🤿")}</div><div style="min-width:0"><div class="ct">${esc(v(r,"Название"))}</div><div class="cs">${esc(sub)}</div></div><div class="price">${esc(price(v(r,"Цена")))}</div><span class="chev">›</span></button>`;
+  }).join("")+`</div>`).join("")+`</div>`;
+}
+window.course=function(i){
+  const r=window._courses[i]; const start=parseDate(v(r,"Ближайший старт"));
+  const kv=[["💰","Цена",price(v(r,"Цена"))],["⏱","Сроки",v(r,"Сроки")],["🎂","Возраст",v(r,"Мин. возраст")?("от "+v(r,"Мин. возраст")+" лет"):""],
+    ["🎫","Нужен сертификат",v(r,"Нужен сертификат")],["📋","Требования",v(r,"Требования")],["✅","Входит",v(r,"Что входит")],
+    ["📅","Ближайший старт",start&&start>=today()?fmtD(start):""]].filter(x=>x[2]);
+  sheet(`<h3><span>${esc(v(r,"Иконка")||"🤿")}</span>${esc(v(r,"Название"))}</h3>
+    ${v(r,"Описание")?`<div class="lead">${esc(v(r,"Описание"))}</div>`:""}
+    <div class="kv">${kv.map(([e,k,val])=>`<div><span class="k">${e}</span><span><b>${k}:</b> ${esc(val)}</span></div>`).join("")}</div>
+    <div class="row"><button class="btn" onclick="book('Здравствуйте! Хочу записаться на курс ${jsq(v(r,"Название"))}')">📝 Записаться на курс</button></div>`);
+};
+
+/* pool */
+function upcomingSlots(days=14){
+  const rows=(D["Бассейн"]||[]).filter(r=>shown(r)&&(v(r,"День недели")||v(r,"Дата")));
+  const t=today(), out=[];
+  for(let k=0;k<days;k++){
+    const d=new Date(t); d.setDate(t.getDate()+k); const wd=WD[d.getDay()];
+    rows.forEach(r=>{
+      const dd=parseDate(v(r,"Дата"));
+      const match = dd ? dd.getTime()===d.getTime() : v(r,"День недели").slice(0,2)===wd;
+      if(match) out.push({d,r});
+    });
+  }
+  const now=new Date();
+  return out.filter(x=>{ const [h,m]=tm(v(x.r,"Начало")).split(":").map(Number); const s=new Date(x.d); s.setHours(h||0,m||0); return s>now; })
+            .sort((a,b)=>a.d-b.d||tm(v(a.r,"Начало")).localeCompare(tm(v(b.r,"Начало"))));
+}
+function windowsText(){
+  const rows=(D["Окна бассейна"]||[]).filter(r=>v(r,"День")&&v(r,"Можно в воду с"));
+  // group days that have identical windows
+  const byDay={};
+  rows.forEach(r=>{ const d=v(r,"День").slice(0,2); (byDay[d]=byDay[d]||[]).push(tm(v(r,"Можно в воду с"))+"–"+tm(v(r,"Выйти из воды до"))); });
+  const groups=[];
+  WD_ORDER.forEach(d=>{ if(!byDay[d]) return; const key=byDay[d].join(", "); const last=groups[groups.length-1];
+    if(last&&last.key===key&&WD_ORDER.indexOf(last.days[last.days.length-1])===WD_ORDER.indexOf(d)-1) last.days.push(d); else groups.push({key,days:[d]}); });
+  return groups.map(g=>[g.days.length>1?g.days[0]+"–"+g.days[g.days.length-1]:g.days[0], g.key.replace(/, /g,"<br>")]);
+}
+function rPool(){
+  const slots=upcomingSlots(); window._slots=slots;
+  let h=`<div class="sec"><h2>Ближайшие занятия</h2><div class="list">`;
+  h+= slots.length? slots.slice(0,12).map((x,i)=>{ const r=x.r; const free=v(r,"Свободно мест");
+    return `<button class="slot" onclick="slot(${i})"><div class="date"><div class="d">${x.d.getDate()}</div><div class="w">${WD[x.d.getDay()]}</div></div>
+      <div style="flex:1;min-width:0"><div class="time">${tm(v(r,"Начало"))}–${tm(v(r,"Выход из воды"))}</div><div class="ct" style="font-size:14.5px;font-weight:600">${esc(v(r,"Что проходит"))}</div>
+      <div class="tags" style="margin-top:5px">${v(r,"Для кого")?`<span class="tag">${esc(v(r,"Для кого"))}</span>`:""}${free!==""?(+free>0?`<span class="tag ${+free<=2?"hot":"ok"}">мест: ${esc(free)}</span>`:`<span class="tag hot">мест нет</span>`):""}</div></div><span class="chev">›</span></button>`; }).join("")
+    : `<div class="empty">Ближайших занятий пока нет — напиши, подберём время</div>`;
+  h+=`</div>`;
+  const w=windowsText();
+  if(w.length){
+    h+=`<h2>Когда можно заниматься</h2><div class="win">${w.map(([d,t])=>`<div class="dl">${d}</div><div>${t}</div>`).join("")}</div>
+      <div class="pdesc" style="margin:8px 2px 0">Время нахождения в воде. Занятие (теория + вода) длится 2–3 часа — подберём удобное время внутри этих окон.</div>
+      <div class="row"><button class="btn ghost" onclick="book('Здравствуйте! Хочу подобрать время для занятия в бассейне')">🕒 Подобрать своё время</button></div>`;
+  }
+  h+=`<h2>Где</h2><div class="info"><div><b>${esc(v(S,"Бассейн — название"))}</b></div><div>📍 ${esc(v(S,"Бассейн — адрес"))}</div>
+    ${v(S,"Бассейн — метро")?`<div>🚇 ${esc(v(S,"Бассейн — метро"))}</div>`:""}
+    ${v(S,"Бассейн — что взять")?`<div><span class="l">С собой:</span> ${esc(v(S,"Бассейн — что взять"))}</div>`:""}
+    ${v(S,"Карта бассейна (ссылка)")?`<div class="row"><button class="btn ghost" onclick="openLink('${jsq(v(S,"Карта бассейна (ссылка)"))}')">🗺 Открыть на карте</button></div>`:""}</div></div>`;
+  return h;
+}
+window.slot=function(i){
+  const x=window._slots[i], r=x.r;
+  const label=`${WD[x.d.getDay()]}, ${fmtD(x.d)}, ${tm(v(r,"Начало"))}`;
+  sheet(`<h3>🏊 ${esc(v(r,"Что проходит"))}</h3><div class="lead">${esc(label)}–${tm(v(r,"Выход из воды"))}</div>
+    <div class="kv">${[["👥","Для кого",v(r,"Для кого")],["🎟","Свободно мест",v(r,"Свободно мест")],["🧑‍🏫","Инструктор",v(r,"Инструктор")],["📝","Примечание",v(r,"Примечание")],["📍","Где",v(S,"Бассейн — адрес")]]
+      .filter(x=>x[2]).map(([e,k,val])=>`<div><span class="k">${e}</span><span><b>${k}:</b> ${esc(val)}</span></div>`).join("")}</div>
+    <div class="row"><button class="btn" onclick="book('Здравствуйте! Хочу записаться: ${jsq(v(r,"Что проходит"))}, ${label}')">📝 Записаться</button></div>`);
+};
+
+/* places */
+function rPlaces(){
+  const rows=(D["Места"]||[]).filter(r=>shown(r)&&v(r,"Название"));
+  if(!rows.length) return `<div class="empty">Скоро здесь появятся наши места погружений</div>`;
+  return `<div class="sec"><div class="list" style="margin-top:6px">`+rows.map((r,i)=>{
+    const tags=[v(r,"Макс. глубина, м")?"до "+v(r,"Макс. глубина, м")+" м":"", v(r,"Мин. уровень"), v(r,"Видимость")?"видимость "+v(r,"Видимость"):"", v(r,"Вода, °C")?"вода "+v(r,"Вода, °C").replace(/(\d)$/,"$1°"):"", v(r,"Сезон"), v(r,"Расстояние")?"📍 "+v(r,"Расстояние"):""].filter(Boolean);
+    return `<div class="pcard"><div class="pimg" style="background-image:${photo(v(r,"Фото"),i)}">${esc(v(r,"Название"))}${v(r,"Тип")?`<span class="badge">${esc(v(r,"Тип"))}</span>`:""}</div>
+      <div class="pbody">${v(r,"Регион")?`<div class="cs" style="margin:0 0 6px">${esc(v(r,"Регион"))}</div>`:""}<div class="tags">${tags.map(t=>`<span class="tag">${esc(t)}</span>`).join("")}</div>
+      ${v(r,"Описание")?`<div class="pdesc">${esc(v(r,"Описание"))}</div>`:""}
+      ${v(r,"Карта (ссылка)")?`<div class="row"><button class="btn ghost" onclick="openLink('${jsq(v(r,"Карта (ссылка)"))}')">🗺 На карте</button></div>`:""}</div></div>`;
+  }).join("")+`</div></div>`;
+}
+
+/* trips */
+function rTrips(){
+  const t=today();
+  const rows=(D["Поездки"]||[]).filter(r=>shown(r)&&v(r,"Направление")).map(r=>({r,s:parseDate(v(r,"Дата начала")),e:parseDate(v(r,"Дата окончания"))}))
+    .filter(x=>!(x.e||x.s)||(x.e||x.s)>=t).sort((a,b)=>(a.s||0)-(b.s||0));
+  if(!rows.length) return `<div class="empty">Новые поездки скоро появятся — следи за каналом</div>`;
+  window._trips=rows;
+  return `<div class="sec"><div class="list" style="margin-top:6px">`+rows.map((x,i)=>{ const r=x.r;
+    const dates=x.s?(fmtD(x.s)+(x.e?" – "+fmtD(x.e):"")+" "+x.s.getFullYear()):"";
+    const free=v(r,"Свободно мест");
+    const badge= free!=="" ? (+free>0?`<span class="badge">🔥 мест: ${esc(free)}</span>`:`<span class="badge">мест нет</span>`) : "";
+    const tags=[v(r,"Формат"), v(r,"Погружений")?v(r,"Погружений")+" погружений":"", v(r,"Мин. уровень")].filter(Boolean);
+    return `<div class="pcard"><div class="pimg" style="background-image:${photo(v(r,"Фото"),i+2)}">${esc(v(r,"Направление"))}${badge}</div>
+      <div class="pbody"><div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline"><div class="cs" style="margin:0">📅 ${esc(dates)}${v(r,"Страна")?" · "+esc(v(r,"Страна")):""}</div><div class="price" style="padding:0">${esc(price(v(r,"Цена")))}</div></div>
+      ${tags.length?`<div class="tags" style="margin-top:8px">${tags.map(t=>`<span class="tag">${esc(t)}</span>`).join("")}</div>`:""}
+      ${v(r,"Описание")?`<div class="pdesc">${esc(v(r,"Описание"))}</div>`:""}
+      <div class="row"><button class="btn" onclick="trip(${i})">Подробнее</button></div></div></div>`;
+  }).join("")+`</div></div>`;
+}
+window.trip=function(i){
+  const x=window._trips[i], r=x.r;
+  const dates=x.s?(fmtD(x.s)+(x.e?" – "+fmtD(x.e):"")+" "+x.s.getFullYear()):"";
+  sheet(`<h3>✈️ ${esc(v(r,"Направление"))}</h3><div class="lead">${esc(dates)}${v(r,"Страна")?" · "+esc(v(r,"Страна")):""}</div>
+    ${v(r,"Описание")?`<div class="lead" style="color:var(--text)">${esc(v(r,"Описание"))}</div>`:""}
+    <div class="kv">${[["💰","Цена",v(r,"Цена")],["🌊","Формат",v(r,"Формат")],["🤿","Погружений",v(r,"Погружений")],["🎫","Уровень",v(r,"Мин. уровень")],
+      ["✅","Входит",v(r,"Что входит")],["➖","Не входит",v(r,"Не входит")],["🎟","Свободно мест",v(r,"Свободно мест")!==""?(v(r,"Свободно мест")+(v(r,"Всего мест")?" из "+v(r,"Всего мест"):"")):""]]
+      .filter(x=>x[2]).map(([e,k,val])=>`<div><span class="k">${e}</span><span><b>${k}:</b> ${esc(val)}</span></div>`).join("")}</div>
+    <div class="row"><button class="btn" onclick="book('Здравствуйте! Хочу поехать: ${jsq(v(r,"Направление"))}, ${esc(dates)}')">🙋 Хочу поехать</button>
+    ${v(r,"Подробнее (ссылка)")?`<button class="btn ghost" onclick="openLink('${jsq(v(r,"Подробнее (ссылка)"))}')">На сайте</button>`:""}</div>`);
+};
+
+/* contacts */
+function rContacts(){
+  const items=[
+    ["✈️","Написать в Telegram", tgNick()?"@"+tgNick():"", tgNick()?`book('Здравствуйте!')`:""],
+    ["📞","Позвонить", v(S,"Телефон"), v(S,"Телефон")?`openLink('tel:${v(S,"Телефон").replace(/[^\d+]/g,"")}')`:""],
+    ["📣","Наш канал", v(S,"Telegram-канал").replace(/^https?:\/\//,""), /t\.me\/.+/.test(v(S,"Telegram-канал"))?`openLink('${jsq(v(S,"Telegram-канал"))}')`:""],
+    ["✉️","Email", v(S,"Email"), v(S,"Email")?`openLink('mailto:${jsq(v(S,"Email"))}')`:""],
+    ["🌐","Сайт", v(S,"Сайт").replace(/^https?:\/\//,""), v(S,"Сайт")?`openLink('${jsq(v(S,"Сайт"))}')`:""],
+  ].filter(x=>x[2]&&x[3]);
+  return `<div class="sec"><h2>Связаться</h2><div class="list">`+items.map(([e,t,s,a])=>`<button class="card" onclick="${a}"><div class="ic">${e}</div><div><div class="ct">${t}</div><div class="cs">${esc(s)}</div></div><span class="chev" style="margin-left:auto">›</span></button>`).join("")+
+   `</div><h2>Офис</h2><div class="info"><div>📍 ${esc(v(S,"Адрес офиса"))}</div>${v(S,"Метро офиса")?`<div>🚇 ${esc(v(S,"Метро офиса"))}</div>`:""}${v(S,"Часы офиса")?`<div>🕒 ${esc(v(S,"Часы офиса"))}</div>`:""}
+   ${v(S,"Карта офиса (ссылка)")?`<div class="row"><button class="btn ghost" onclick="openLink('${jsq(v(S,"Карта офиса (ссылка)"))}')">🗺 Открыть на карте</button></div>`:""}</div></div>`;
+}
+
+/* bottom sheet */
+function sheet(html){
+  const s=document.getElementById("sheet"), b=document.getElementById("back");
+  s.innerHTML=`<div class="grab"></div>`+html; s.scrollTop=0; s.classList.add("on"); b.classList.add("on");
+  if(tg&&tg.BackButton){ tg.BackButton.show(); }
+}
+function closeSheet(){ document.getElementById("sheet").classList.remove("on"); document.getElementById("back").classList.remove("on"); if(tg&&tg.BackButton) tg.BackButton.hide(); }
+document.getElementById("back").onclick=closeSheet;
+(function(){ let y0=null; const s=document.getElementById("sheet");
+  s.addEventListener("touchstart",e=>{ if(s.scrollTop<=0) y0=e.touches[0].clientY; },{passive:true});
+  s.addEventListener("touchend",e=>{ if(y0!==null && e.changedTouches[0].clientY-y0>70) closeSheet(); y0=null; },{passive:true}); })();
+
+/* telegram */
+if(tg){
+  tg.ready(); tg.expand();
+  if(tg.colorScheme==="dark") document.documentElement.classList.add("dark");
+  tg.onEvent && tg.onEvent("themeChanged",()=>document.documentElement.classList.toggle("dark",tg.colorScheme==="dark"));
+  tg.BackButton && tg.BackButton.onClick(closeSheet);
+  try{ tg.setHeaderColor && tg.setHeaderColor("secondary_bg_color"); }catch(e){}
+}
+load();
+</script>
+</body>
+</html>
